@@ -102,6 +102,8 @@ type CoreBuild struct {
 	// Indicates whether the build is already initialized before calling Prepare(..)
 	Prepared bool
 
+	// HCL2ProvisionerPrepare and HCL2PostProcessorsPrepare are used to interpolate any build variable by decoding and preparing
+	// the Provisioners and Post-Processors again for HCL2 templates.
 	HCL2ProvisionerPrepare    func(typeName string, provisioner Provisioner, data map[string]interface{}) (Provisioner, hcl.Diagnostics)
 	HCL2PostProcessorsPrepare func(corePP CoreBuildPostProcessor, builderArtifact Artifact) (PostProcessor, hcl.Diagnostics)
 
@@ -316,6 +318,7 @@ func (b *CoreBuild) Run(ctx context.Context, originalUi Ui) ([]Artifact, error) 
 	keepOriginalArtifact := len(b.PostProcessors) == 0
 
 	if b.HCL2PostProcessorsPrepare != nil {
+		// For HCL2, decode and prepare Post-Processors again to interpolate build variables
 		for i, ppSeq := range b.PostProcessors {
 			for j, corePP := range ppSeq {
 				postProcessors, diags := b.HCL2PostProcessorsPrepare(corePP, builderArtifact)

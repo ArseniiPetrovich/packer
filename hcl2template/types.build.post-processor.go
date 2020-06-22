@@ -71,10 +71,10 @@ func (cfg *PackerConfig) startPostProcessor(source SourceBlock, pp *PostProcesso
 		})
 		return nil, diags
 	}
-	return cfg.decodeAndPrepare(pp, ectx, postProcessor, source)
+	return cfg.decodeAndPreparePostProvisioner(pp, ectx, postProcessor, source)
 }
 
-func (cfg *PackerConfig) decodeAndPrepare(pp *PostProcessorBlock, ectx *hcl.EvalContext, postProcessor packer.PostProcessor, source SourceBlock) (packer.PostProcessor, hcl.Diagnostics) {
+func (cfg *PackerConfig) decodeAndPreparePostProvisioner(pp *PostProcessorBlock, ectx *hcl.EvalContext, postProcessor packer.PostProcessor, source SourceBlock) (packer.PostProcessor, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	flatProvisinerCfg, moreDiags := decodeHCL2Spec(pp.Rest, ectx, postProcessor)
 	diags = append(diags, moreDiags...)

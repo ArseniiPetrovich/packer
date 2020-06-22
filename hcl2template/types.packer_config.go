@@ -278,8 +278,9 @@ func (cfg *PackerConfig) getCoreBuildPostProcessors(source SourceBlock, blocks [
 	return res, diags
 }
 
+// HCL2ProvisionerPrepare takes an already prepared Provisioner to interpolate any build variable by decoding and preparing it again.
+// This function is used by the ProvisionHook at the runtime in the provision step.
 func (cfg *PackerConfig) HCL2ProvisionerPrepare(typeName string, provisioner packer.Provisioner, data map[string]interface{}) (packer.Provisioner, hcl.Diagnostics) {
-	// This will interpolate build variables by decoding the provisioner block again
 	var diags hcl.Diagnostics
 	if data == nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -327,8 +328,9 @@ func (cfg *PackerConfig) HCL2ProvisionerPrepare(typeName string, provisioner pac
 	return provisioner, diags
 }
 
-func (cfg *PackerConfig) HCL2PProcessorsPrepare(corePP packer.CoreBuildPostProcessor, builderArtifact packer.Artifact) (packer.PostProcessor, hcl.Diagnostics) {
-	// This will interpolate build variables by decoding and preparing the post-processor block again
+// HCL2PostProcessorsPrepare takes an already prepared Post-Processor to interpolate any build variable by decoding and preparing it again.
+// This function is used by the CoreBuild at the runtime, after running the build and before running the post-processors.
+func (cfg *PackerConfig) HCL2PostProcessorsPrepare(corePP packer.CoreBuildPostProcessor, builderArtifact packer.Artifact) (packer.PostProcessor, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	generatedData := make(map[string]interface{})
 	artifactSateData := builderArtifact.State("generated_data")
@@ -365,7 +367,7 @@ func (cfg *PackerConfig) HCL2PProcessorsPrepare(corePP packer.CoreBuildPostProce
 				if pb.PType != corePP.PType {
 					continue
 				}
-				return cfg.decodeAndPrepare(pb, cfg.EvalContext(generatedVariables), corePP.PostProcessor, src)
+				return cfg.decodeAndPreparePostProvisioner(pb, cfg.EvalContext(generatedVariables), corePP.PostProcessor, src)
 			}
 		}
 	}
@@ -487,7 +489,7 @@ func (cfg *PackerConfig) GetBuilds(opts packer.GetBuildsOptions) ([]packer.Build
 				Provisioners:              provisioners,
 				PostProcessors:            pps,
 				HCL2ProvisionerPrepare:    cfg.HCL2ProvisionerPrepare,
-				HCL2PostProcessorsPrepare: cfg.HCL2PProcessorsPrepare,
+				HCL2PostProcessorsPrepare: cfg.HCL2PostProcessorsPrepare,
 				Prepared:                  true,
 			}
 			// Prepare just sets the "prepareCalled" flag on CoreBuild, since

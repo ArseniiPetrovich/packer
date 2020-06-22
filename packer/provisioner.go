@@ -132,6 +132,7 @@ func (h *ProvisionHook) Run(ctx context.Context, name string, ui Ui, comm Commun
 		cast := CastDataToMap(data)
 
 		if h.HCL2Prepare != nil {
+			// For HCL2, decode and prepare Provisioner again to interpolate build variables
 			provisioner, diags := h.HCL2Prepare(p.TypeName, p.Provisioner, cast)
 			if diags.HasErrors() {
 				return diags
