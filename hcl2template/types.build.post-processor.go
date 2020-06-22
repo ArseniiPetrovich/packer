@@ -71,9 +71,14 @@ func (cfg *PackerConfig) startPostProcessor(source SourceBlock, pp *PostProcesso
 		})
 		return nil, diags
 	}
+	return cfg.decodeAndPrepare(pp, ectx, postProcessor, source)
+}
+
+func (cfg *PackerConfig) decodeAndPrepare(pp *PostProcessorBlock, ectx *hcl.EvalContext, postProcessor packer.PostProcessor, source SourceBlock) (packer.PostProcessor, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
 	flatProvisinerCfg, moreDiags := decodeHCL2Spec(pp.Rest, ectx, postProcessor)
 	diags = append(diags, moreDiags...)
-	err = postProcessor.Configure(source.builderVariables(), flatProvisinerCfg)
+	err := postProcessor.Configure(source.builderVariables(), flatProvisinerCfg)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

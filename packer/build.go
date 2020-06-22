@@ -102,8 +102,8 @@ type CoreBuild struct {
 	// Indicates whether the build is already initialized before calling Prepare(..)
 	Prepared bool
 
-	HCL2ProvisionerPrepare    func(typeName string, data map[string]interface{}) (Provisioner, hcl.Diagnostics)
-	HCL2PostProcessorsPrepare func(builderArtifact Artifact) ([]CoreBuildPostProcessor, hcl.Diagnostics)
+	HCL2ProvisionerPrepare    func(typeName string, provisioner Provisioner, data map[string]interface{}) (Provisioner, hcl.Diagnostics)
+	HCL2PostProcessorsPrepare func(corePP CoreBuildPostProcessor, builderArtifact Artifact) (PostProcessor, hcl.Diagnostics)
 
 	debug         bool
 	force         bool
@@ -316,11 +316,15 @@ func (b *CoreBuild) Run(ctx context.Context, originalUi Ui) ([]Artifact, error) 
 	keepOriginalArtifact := len(b.PostProcessors) == 0
 
 	if b.HCL2PostProcessorsPrepare != nil {
-		postProcessors, diags := b.HCL2PostProcessorsPrepare(builderArtifact)
-		if diags.HasErrors() {
-			errors = append(errors, diags)
-		} else {
-			b.PostProcessors = [][]CoreBuildPostProcessor{postProcessors}
+		for i, ppSeq := range b.PostProcessors {
+			for j, corePP := range ppSeq {
+				postProcessors, diags := b.HCL2PostProcessorsPrepare(corePP, builderArtifact)
+				if diags.HasErrors() {
+					errors = append(errors, diags)
+				} else {
+					b.PostProcessors[i][j].PostProcessor = postProcessors
+				}
+			}
 		}
 	}
 

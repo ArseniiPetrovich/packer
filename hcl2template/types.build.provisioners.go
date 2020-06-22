@@ -144,6 +144,12 @@ func (cfg *PackerConfig) startProvisioner(source SourceBlock, pb *ProvisionerBlo
 		})
 		return nil, diags
 	}
+	return cfg.decodeAndPrepareProvisioner(pb, ectx, provisioner, source)
+}
+
+func (cfg *PackerConfig) decodeAndPrepareProvisioner(pb *ProvisionerBlock, ectx *hcl.EvalContext, provisioner packer.Provisioner, source SourceBlock) (packer.Provisioner, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
 	flatProvisionerCfg, moreDiags := decodeHCL2Spec(pb.HCL2Ref.Rest, ectx, provisioner)
 	diags = append(diags, moreDiags...)
 	if diags.HasErrors() {
@@ -155,7 +161,7 @@ func (cfg *PackerConfig) startProvisioner(source SourceBlock, pb *ProvisionerBlo
 	// configs := make([]interface{}, 2)
 	// configs = append(, flatProvisionerCfg)
 	// configs = append(configs, generatedVars)
-	err = provisioner.Prepare(source.builderVariables(), flatProvisionerCfg)
+	err := provisioner.Prepare(source.builderVariables(), flatProvisionerCfg)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

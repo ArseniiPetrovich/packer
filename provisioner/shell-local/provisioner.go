@@ -2,14 +2,14 @@ package shell
 
 import (
 	"context"
-
 	"github.com/hashicorp/hcl/v2/hcldec"
 	sl "github.com/hashicorp/packer/common/shell-local"
 	"github.com/hashicorp/packer/packer"
 )
 
 type Provisioner struct {
-	config sl.Config
+	config      sl.Config
+	isValidated bool
 }
 
 func (p *Provisioner) ConfigSpec() hcldec.ObjectSpec { return p.config.FlatMapstructure().HCL2Spec() }
@@ -20,11 +20,16 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		return err
 	}
 
+	if p.isValidated {
+		return nil
+	}
+
 	err = sl.Validate(&p.config)
 	if err != nil {
 		return err
 	}
 
+	p.isValidated = true
 	return nil
 }
 

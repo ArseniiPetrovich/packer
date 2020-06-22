@@ -42,7 +42,7 @@ type ProvisionHook struct {
 	// be prepared (by calling Prepare) at some earlier stage.
 	Provisioners []*HookedProvisioner
 
-	HCL2Prepare func(typeName string, data map[string]interface{}) (Provisioner, hcl.Diagnostics)
+	HCL2Prepare func(typeName string, provisioner Provisioner, data map[string]interface{}) (Provisioner, hcl.Diagnostics)
 }
 
 // Provisioners interpolate most of their fields in the prepare stage; this
@@ -132,7 +132,7 @@ func (h *ProvisionHook) Run(ctx context.Context, name string, ui Ui, comm Commun
 		cast := CastDataToMap(data)
 
 		if h.HCL2Prepare != nil {
-			provisioner, diags := h.HCL2Prepare(p.TypeName, cast)
+			provisioner, diags := h.HCL2Prepare(p.TypeName, p.Provisioner, cast)
 			if diags.HasErrors() {
 				return diags
 			}

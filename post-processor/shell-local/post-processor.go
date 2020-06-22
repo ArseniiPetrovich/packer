@@ -2,14 +2,14 @@ package shell_local
 
 import (
 	"context"
-
 	"github.com/hashicorp/hcl/v2/hcldec"
 	sl "github.com/hashicorp/packer/common/shell-local"
 	"github.com/hashicorp/packer/packer"
 )
 
 type PostProcessor struct {
-	config sl.Config
+	config      sl.Config
+	isValidated bool
 }
 
 type ExecuteCommandTemplate struct {
@@ -24,6 +24,11 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	if p.isValidated {
+		return nil
+	}
+
 	if len(p.config.ExecuteCommand) == 1 {
 		// Backwards compatibility -- before we merged the shell-local
 		// post-processor and provisioners, the post-processor accepted
@@ -37,7 +42,13 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		p.config.ExecuteCommand = append([]string{"sh", "-c"}, p.config.ExecuteCommand...)
 	}
 
-	return sl.Validate(&p.config)
+	err = sl.Validate(&p.config)
+	if err != nil {
+		return err
+	}
+
+	p.isValidated = true
+	return nil
 }
 
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
