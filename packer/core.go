@@ -424,6 +424,128 @@ func (c *Core) EvaluateExpression(line string) (string, bool, hcl.Diagnostics) {
 	}
 }
 
+func (c *Core) InspectConfig(InspectConfigOptions) (string, string, hcl.Diagnostics) {
+
+	// Convenience...
+	output := &strings.Builder{}
+	machine := &strings.Builder{}
+
+	// Description
+	if c.Template.Description != "" {
+		fmt.Fprintln(output, "Description:")
+		fmt.Fprintln(output, c.Template.Description)
+	}
+
+	variables := c.Template.Variables
+	// Variables
+	if len(variables) == 0 {
+		fmt.Fprintln(output, "Variables:")
+		fmt.Fprintln(output, "  <No variables>")
+	} else {
+		requiredHeader := false
+		for k, v := range variables {
+			for _, sensitive := range c.Template.SensitiveVariables {
+				if ok := strings.Compare(sensitive.Default, v.Default); ok == 0 {
+					v.Default = "<sensitive>"
+				}
+			}
+			if v.Required {
+				if !requiredHeader {
+					requiredHeader = true
+					fmt.Fprintln(output, "Required variables:")
+				}
+
+				fmt.Fprintln(machine, "template-variable", k, v.Default, "1")
+				fmt.Fprintln(output, "  "+k)
+			}
+		}
+
+		if requiredHeader {
+			fmt.Fprintln(output, "")
+		}
+
+		fmt.Fprintln(output, "Optional variables and their defaults:\n")
+		keys := make([]string, 0, len(c.Template.Variables))
+		max := 0
+		for k := range c.Template.Variables {
+			keys = append(keys, k)
+			if len(k) > max {
+				max = len(k)
+			}
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			v := c.Template.Variables[k]
+			if v.Required {
+				continue
+			}
+			for _, sensitive := range c.Template.SensitiveVariables {
+				if ok := strings.Compare(sensitive.Default, v.Default); ok == 0 {
+					v.Default = "<sensitive>"
+				}
+			}
+
+			padding := strings.Repeat(" ", max-len(k))
+
+			fmt.Fprintf(output, "  %s%s = %s", k, padding, v.Default)
+			fmt.Fprintln(machine, "template-variable", k, v.Default, "0")
+		}
+	}
+
+	fmt.Fprintln(output, "")
+
+	// Builders
+	fmt.Fprintln(output, "Builders:\n")
+	if len(c.Template.Builders) == 0 {
+		fmt.Fprintln(output, "  <No builders>")
+	} else {
+		keys := make([]string, 0, len(c.Template.Builders))
+		max := 0
+		for k := range c.Template.Builders {
+			keys = append(keys, k)
+			if len(k) > max {
+				max = len(k)
+			}
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			v := c.Template.Builders[k]
+			padding := strings.Repeat(" ", max-len(k))
+			outputS := fmt.Sprintf("  %s%s", k, padding)
+			if v.Name != v.Type {
+				outputS = fmt.Sprintf("%s (%s)", output, v.Type)
+			}
+
+			fmt.Fprintln(machine, "template-builder", k, v.Type)
+			fmt.Fprintln(output, outputS)
+
+		}
+	}
+
+	fmt.Fprintln(output, "")
+
+	// Provisioners
+	fmt.Fprintln(output, "Provisioners:\n")
+	if len(c.Template.Provisioners) == 0 {
+		fmt.Fprintln(output, "  <No provisioners>")
+	} else {
+		for _, v := range c.Template.Provisioners {
+			fmt.Fprintln(machine, "template-provisioner", v.Type)
+			fmt.Fprintln(output, fmt.Sprintf("  %s", v.Type))
+		}
+	}
+
+	fmt.Fprintln(output, "\nNote: If your build names contain user variables or template\n"+
+		"functions such as 'timestamp', these are processed at build time,\n"+
+		"and therefore only show in their raw form here.")
+
+	return output.String(), machine.String(), nil
+}
+
 func (c *Core) FixConfig(opts FixConfigOptions) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 

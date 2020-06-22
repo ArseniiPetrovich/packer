@@ -478,3 +478,7 @@ func (p *PackerConfig) FixConfig(_ packer.FixConfigOptions) (diags hcl.Diagnosti
 	// No Fixers exist for HCL2 configs so there is nothing to do here for now.
 	return
 }
+
+func (p *PackerConfig) InspectConfig(packer.InspectConfigOptions) (out string, machine string, diags hcl.Diagnostics) {
+	return
+}
